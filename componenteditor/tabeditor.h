@@ -1,6 +1,8 @@
 #ifndef TABEDITOR_H
 #define TABEDITOR_H
 
+// Defines the widget that provides the graphical interface
+
 // #include "../fileinterface/colladainterface.h"
 
 #include <QTabWidget>

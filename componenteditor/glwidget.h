@@ -79,13 +79,13 @@ protected:
 private:
 
   // Initialization functions
-  void init_cl();
-  GLuint init_shaders();
+  void initCl();
+  GLuint initShaders();
   std::string read_file(const char* filename);
   void compile_shader(GLint shader);
-  void init_uniforms(GLuint program);
-  void init_buffers(GLuint program);
-  void init_physics();
+  void initUniforms(GLuint program);
+  void initBuffers(GLuint program);
+  void initPhysics();
 
   // Deallocation functions
   void deallocateCL();

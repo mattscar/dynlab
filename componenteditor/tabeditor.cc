@@ -3,6 +3,7 @@
 #include "../mainwindow.h"
 #include <QScrollArea>
 
+// Defines the editor that displays the application's graphics
 TabEditor::TabEditor(QMainWindow *parent) : QTabWidget(parent) {
 
   setTabsClosable(true);

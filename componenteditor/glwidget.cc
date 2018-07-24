@@ -28,33 +28,33 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), p
 
   // Configure tool settings
   win = static_cast<MainWindow*>(parent->parent());
-  win->draw_group->setEnabled(true);
+  win->drawGroup->setEnabled(true);
 
   // Connect draw actions
-  connect(win->selection_action, SIGNAL(triggered()), this, SLOT(makeSelectionActionActive()));
-  connect(win->circle_action, SIGNAL(triggered()), this, SLOT(makeCircleActionActive()));
-  connect(win->rect_action, SIGNAL(triggered()), this, SLOT(makeRectActionActive()));
-  win->selection_action->setChecked(true);
+  connect(win->selectionAction, SIGNAL(triggered()), this, SLOT(makeSelectionActionActive()));
+  connect(win->circleAction, SIGNAL(triggered()), this, SLOT(makeCircleActionActive()));
+  connect(win->rectAction, SIGNAL(triggered()), this, SLOT(makeRectActionActive()));
+  win->selectionAction->setChecked(true);
   current_tool = SELECTION;
 
   // Connect simulation actions
-  connect(win->pause_action, SIGNAL(triggered()), this, SLOT(pauseSimulation()));
-  connect(win->play_action, SIGNAL(triggered()), this, SLOT(playSimulation()));
-  connect(win->stop_action, SIGNAL(triggered()), this, SLOT(stopSimulation()));
+  connect(win->pauseAction, SIGNAL(triggered()), this, SLOT(pauseSimulation()));
+  connect(win->playAction, SIGNAL(triggered()), this, SLOT(playSimulation()));
+  connect(win->stopAction, SIGNAL(triggered()), this, SLOT(stopSimulation()));
 
   // Configure tool state
   current_state = NO_CLICK;
 
   // Read graphic data
-  ColladaInterface::readGeometries(&geom_vec, "sphere.dae");
-  num_vertices = geom_vec[0].map["POSITION"].size/12;
-  num_triangles = geom_vec[0].index_count/3;
+  ColladaInterface::readGeometries(&geomVec, "sphere.dae");
+  num_vertices = geomVec[0].map["POSITION"].size/12;
+  num_triangles = geomVec[0].index_count/3;
 }
 
 GLWidget::~GLWidget() {
 
   // Deallocate mesh data
-  ColladaInterface::freeGeometries(&geom_vec);
+  ColladaInterface::freeGeometries(&geomVec);
 
   deallocateGL();
   deallocateCL();
@@ -65,9 +65,9 @@ void GLWidget::deallocateGL() {
   glFinish();
 
   // Deallocate arrays
-  delete(vertex_data);
-  delete(normal_data);
-  delete(index_data);
+  delete(vertexData);
+  delete(normalData);
+  delete(indexData);
 
   if(pick_result != NULL)
     delete(pick_result);
@@ -102,7 +102,7 @@ void GLWidget::deallocateCL() {
 void GLWidget::initializeGL() {
 
   // Sphere data
-  sphere_vec = new SphereData[kNumObjects];
+  sphereVec = new SphereData[kNumObjects];
 
   // Sphere properties
   sphere_props = new SphereProperties[kNumObjects];
@@ -127,19 +127,19 @@ void GLWidget::initializeGL() {
   }
 
   // Initialize physical parameters
-  init_physics();
+  initPhysics();
 
   // Access and compile shaders
-  GLuint program = init_shaders();
+  GLuint program = initShaders();
 
   // Create and initialize buffers
-  init_buffers(program);
+  initBuffers(program);
 
   // Create and initialize uniform data elements
-  init_uniforms(program);
+  initUniforms(program);
 
   // Create and initialize OpenCL structures
-  init_cl();
+  initCl();
 
   // Start main timer
   timer = new QTime();
@@ -158,24 +158,24 @@ void GLWidget::initializeGL() {
 }
 
 // Initialize physical parameters
-void GLWidget::init_physics() {
+void GLWidget::initPhysics() {
 
   srand(time(NULL));
   for(unsigned i=0; i<kNumObjects; i++) {
-    sphere_vec[i].radius = static_cast<float>(rand())/RAND_MAX * (kMaxRadius - kMinRadius) + kMinRadius;
-    sphere_vec[i].center = glm::vec3(kMaxRadius * 3.0f * ((i % kObjectsPerRow) + 1),
+    sphereVec[i].radius = static_cast<float>(rand())/RAND_MAX * (kMaxRadius - kMinRadius) + kMinRadius;
+    sphereVec[i].center = glm::vec3(kMaxRadius * 3.0f * ((i % kObjectsPerRow) + 1),
                                      kMaxRadius * 3.0f * ((i / kObjectsPerRow) + 1),
                                      -3.0f);
-    sphere_vec[i].old_velocity = glm::vec4(1.0f*rand()/RAND_MAX * (kMaxVelocity - kMinVelocity) + kMinVelocity,
+    sphereVec[i].old_velocity = glm::vec4(1.0f*rand()/RAND_MAX * (kMaxVelocity - kMinVelocity) + kMinVelocity,
                                            1.0f*rand()/RAND_MAX * (kMaxVelocity - kMinVelocity) + kMinVelocity,
                                            1.0f*rand()/RAND_MAX * (kMaxVelocity - kMinVelocity) + kMinVelocity,
                                            0.0f);
-    sphere_vec[i].new_velocity = sphere_vec[i].old_velocity;
-    sphere_vec[i].acceleration = glm::vec4(1.0f*rand()/RAND_MAX * (kMaxAcceleration - kMinAcceleration) + kMinAcceleration,
+    sphereVec[i].new_velocity = sphereVec[i].old_velocity;
+    sphereVec[i].acceleration = glm::vec4(1.0f*rand()/RAND_MAX * (kMaxAcceleration - kMinAcceleration) + kMinAcceleration,
                                            1.0f*rand()/RAND_MAX * (kMaxAcceleration - kMinAcceleration) + kMinAcceleration,
                                            1.0f*rand()/RAND_MAX * (kMaxAcceleration - kMinAcceleration) + kMinAcceleration,
                                            0.0f);
-    sphere_vec[i].displacement = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    sphereVec[i].displacement = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
     // Set sphere properties
     sphere_props[i].id = static_cast<int>(i);
@@ -183,12 +183,12 @@ void GLWidget::init_physics() {
     		                          static_cast<float>(rand())/RAND_MAX * (kMaxColor - kMinColor) + kMinColor,
     		                          static_cast<float>(rand())/RAND_MAX * (kMaxColor - kMinColor) + kMinColor);
     sphere_props[i].filename = QString("sphere.dae");
-    sphere_props[i].mass = 3.1f * sphere_vec[i].radius;
+    sphere_props[i].mass = 3.1f * sphereVec[i].radius;
   }
 }
 
 // Initialize shader data
-GLuint GLWidget::init_shaders() {
+GLuint GLWidget::initShaders() {
 
   GLuint vs, fs, prog;
   std::string vs_source, fs_source;
@@ -200,8 +200,8 @@ GLuint GLWidget::init_shaders() {
   fs = glCreateShader(GL_FRAGMENT_SHADER);
 
   // Read shader text from files
-  vs_source = read_file(kVertexShaderName);
-  fs_source = read_file(kFragmentShaderName);
+  vs_source = readFile(kVertexShaderName);
+  fs_source = readFile(kFragmentShaderName);
 
   // Set shader source code
   vs_chars = vs_source.c_str();
@@ -231,7 +231,7 @@ GLuint GLWidget::init_shaders() {
 }
 
 // Read a character buffer from a file
-std::string GLWidget::read_file(const char* filename) {
+std::string GLWidget::readFile(const char* filename) {
 
   // Open the file
   std::ifstream ifs(filename, std::ifstream::in);
@@ -273,12 +273,12 @@ void GLWidget::compile_shader(GLint shader) {
 }
 
 // Initialize VAOs, VBOs, and IBOs
-void GLWidget::init_buffers(GLuint program) {
+void GLWidget::initBuffers(GLuint program) {
 
   int loc;
-  float *normal_addr;
-  glm::vec3 *vertex_addr;
-  unsigned short *index_addr;
+  float *normalAddr;
+  glm::vec3 *vertexAddr;
+  unsigned short *indexAddr;
 
   // Create a VAO for each geometry
   glGenVertexArrays(1, &vao);
@@ -290,14 +290,14 @@ void GLWidget::init_buffers(GLuint program) {
   glGenBuffers(1, &ibo);
 
   // Create arrays containing position and normal data
-  vertex_data = new glm::vec3[kNumObjects * geom_vec[0].map["POSITION"].size/12];
-  normal_data = new float[kNumObjects * geom_vec[0].map["NORMAL"].size/4];
-  index_data = new unsigned short[kNumObjects * geom_vec[0].index_count];
+  vertexData = new glm::vec3[kNumObjects * geomVec[0].map["POSITION"].size/12];
+  normalData = new float[kNumObjects * geomVec[0].map["NORMAL"].size/4];
+  indexData = new unsigned short[kNumObjects * geomVec[0].index_count];
 
   // Initialize array addresses
-  vertex_addr = vertex_data;
-  normal_addr = normal_data;
-  index_addr = index_data;
+  vertexAddr = vertexData;
+  normalAddr = normalData;
+  indexAddr = indexData;
 
   // Initialize arrays of count and indices
   count = new GLsizei[kNumObjects];
@@ -307,18 +307,18 @@ void GLWidget::init_buffers(GLuint program) {
   for(unsigned i=0; i<kNumObjects; i++) {
 
     // Set vertex positions, normal vectors, and indices
-    memcpy(vertex_addr, geom_vec[0].map["POSITION"].data, geom_vec[0].map["POSITION"].size);
-    memcpy(normal_addr, geom_vec[0].map["NORMAL"].data, geom_vec[0].map["NORMAL"].size);
-    memcpy(index_addr, geom_vec[0].indices, geom_vec[0].index_count * sizeof(unsigned short));
+    memcpy(vertexAddr, geomVec[0].map["POSITION"].data, geomVec[0].map["POSITION"].size);
+    memcpy(normalAddr, geomVec[0].map["NORMAL"].data, geomVec[0].map["NORMAL"].size);
+    memcpy(indexAddr, geomVec[0].indices, geomVec[0].index_count * sizeof(unsigned short));
 
     // Update the count and indices values
-    count[i] = geom_vec[0].index_count;
-    indices[i] = (GLvoid*)(i * geom_vec[0].index_count * sizeof(unsigned short));
+    count[i] = geomVec[0].index_count;
+    indices[i] = (GLvoid*)(i * geomVec[0].index_count * sizeof(unsigned short));
 
     // Update addresses
-    vertex_addr += geom_vec[0].map["POSITION"].size/12;
-    normal_addr += geom_vec[0].map["NORMAL"].size/4;
-    index_addr += geom_vec[0].index_count;
+    vertexAddr += geomVec[0].map["POSITION"].size/12;
+    normalAddr += geomVec[0].map["NORMAL"].size/4;
+    indexAddr += geomVec[0].index_count;
   }
 
   // Update vertices and indices
@@ -326,12 +326,12 @@ void GLWidget::init_buffers(GLuint program) {
 
     // Update vertices
     for(unsigned j=i*num_vertices; j<(i+1)*num_vertices; j++) {
-      vertex_data[j] *= sphere_vec[i].radius/0.5f;
-      vertex_data[j] += sphere_vec[i].center;
+      vertexData[j] *= sphereVec[i].radius/0.5f;
+      vertexData[j] += sphereVec[i].center;
     }
 
-    for(unsigned int j=i*geom_vec[0].index_count; j<(i+1)*geom_vec[0].index_count; j++) {
-      index_data[j] += i*num_vertices;
+    for(unsigned int j=i*geomVec[0].index_count; j<(i+1)*geomVec[0].index_count; j++) {
+      indexData[j] += i*num_vertices;
     }
   }
 
@@ -340,32 +340,32 @@ void GLWidget::init_buffers(GLuint program) {
 
   // Set vertex coordinate data
   glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
-  glBufferData(GL_ARRAY_BUFFER, kNumObjects * geom_vec[0].map["POSITION"].size,
-               vertex_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, kNumObjects * geomVec[0].map["POSITION"].size,
+               vertexData, GL_STATIC_DRAW);
   loc = glGetAttribLocation(program, "in_coords");
-  glVertexAttribPointer(loc, geom_vec[0].map["POSITION"].stride,
-                        geom_vec[0].map["POSITION"].type, GL_FALSE, 0, 0);
+  glVertexAttribPointer(loc, geomVec[0].map["POSITION"].stride,
+                        geomVec[0].map["POSITION"].type, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(0);
 
   // Set normal vector data
   glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
-  glBufferData(GL_ARRAY_BUFFER, kNumObjects * geom_vec[0].map["NORMAL"].size,
-               normal_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, kNumObjects * geomVec[0].map["NORMAL"].size,
+               normalData, GL_STATIC_DRAW);
   loc = glGetAttribLocation(program, "in_normals");
-  glVertexAttribPointer(loc, geom_vec[0].map["NORMAL"].stride,
-                        geom_vec[0].map["NORMAL"].type, GL_FALSE, 0, 0);
+  glVertexAttribPointer(loc, geomVec[0].map["NORMAL"].stride,
+                        geomVec[0].map["NORMAL"].type, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(1);
 
   // Set index data
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, kNumObjects * geom_vec[0].index_count*sizeof(unsigned short),
-               index_data, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, kNumObjects * geomVec[0].index_count*sizeof(unsigned short),
+               indexData, GL_STATIC_DRAW);
 
   glBindVertexArray(0);
 }
 
 // Initialize uniform data
-void GLWidget::init_uniforms(GLuint program) {
+void GLWidget::initUniforms(GLuint program) {
 
   // Determine the locations of the color and modelview-projection matrices
   color_location = glGetUniformLocation(program, "color");
@@ -376,7 +376,7 @@ void GLWidget::init_uniforms(GLuint program) {
 }
 
 // Initialize OpenCL processing
-void GLWidget::init_cl() {
+void GLWidget::initCl() {
 
   std::string program_string;
   const char *program_chars;
@@ -416,7 +416,7 @@ void GLWidget::init_cl() {
   }
 
   // Create motion program
-  program_string = read_file(kMotionProgramFile);
+  program_string = readFile(kMotionProgramFile);
   program_chars = program_string.c_str();
   program_size = program_string.size();
   motion_program = clCreateProgramWithSource(dev_context, 1, &program_chars, &program_size, &err);
@@ -448,7 +448,7 @@ void GLWidget::init_cl() {
 
   // Create pick-selection program
   program_string.clear();
-  program_string = read_file(kPickSelectionProgramFile);
+  program_string = readFile(kPickSelectionProgramFile);
   program_chars = program_string.c_str();
   program_size = program_string.size();
   pick_selection_program = clCreateProgramWithSource(dev_context, 1, &program_chars, &program_size, &err);
@@ -502,23 +502,23 @@ void GLWidget::init_cl() {
   };
 
   // Determine maximum size of work groups
-  clGetKernelWorkGroupInfo(update_kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+  clGetKernelWorkGroupInfo(update_kernel, device, CL_KERNEL_WORKGroup_SIZE,
                            sizeof(obj_local_size), &obj_local_size, NULL);
-  clGetKernelWorkGroupInfo(motion_kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+  clGetKernelWorkGroupInfo(motion_kernel, device, CL_KERNEL_WORKGroup_SIZE,
                            sizeof(vertex_local_size), &vertex_local_size, NULL);
-  clGetKernelWorkGroupInfo(pick_selection_kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+  clGetKernelWorkGroupInfo(pick_selection_kernel, device, CL_KERNEL_WORKGroup_SIZE,
                            sizeof(pick_local_size), &pick_local_size, NULL);
 
   // Determine global sizes
-  num_groups = (size_t)(ceil((float)kNumObjects/(float)obj_local_size));
-  obj_global_size = num_groups * obj_local_size;
-  num_groups = (size_t)(ceil((float)num_vertices*kNumObjects/vertex_local_size));
-  vertex_global_size = num_groups * vertex_local_size;
-  num_groups = (size_t)(ceil((float)num_triangles*kNumObjects/pick_local_size));
-  pick_global_size = num_groups * pick_local_size;
+  numGroups = (size_t)(ceil((float)kNumObjects/(float)obj_local_size));
+  obj_global_size = numGroups * obj_local_size;
+  numGroups = (size_t)(ceil((float)num_vertices*kNumObjects/vertex_local_size));
+  vertex_global_size = numGroups * vertex_local_size;
+  numGroups = (size_t)(ceil((float)num_triangles*kNumObjects/pick_local_size));
+  pick_global_size = numGroups * pick_local_size;
 
   // Allocate memory for pick-selection result
-  pick_result = new float[2*num_groups];
+  pick_result = new float[2*numGroups];
 
   // Create kernel argument from VBO
   vbo_memobj = clCreateFromGLBuffer(dev_context, CL_MEM_READ_WRITE, vbos[0], &err);
@@ -536,14 +536,14 @@ void GLWidget::init_cl() {
 
   // Create argument containing vertex data
   sphere_memobj = clCreateBuffer(dev_context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                                 kNumObjects * sizeof(SphereData), sphere_vec, &err);
+                                 kNumObjects * sizeof(SphereData), sphereVec, &err);
   if(err < 0) {
     std::cerr << "Couldn't create a buffer object from a VBO" << std::endl;
     exit(1);
   }
 
   // Create buffer object for pick-selection results
-  pick_buffer = clCreateBuffer(dev_context, CL_MEM_WRITE_ONLY, 2 * num_groups * sizeof(float), NULL, &err);
+  pick_buffer = clCreateBuffer(dev_context, CL_MEM_WRITE_ONLY, 2 * numGroups * sizeof(float), NULL, &err);
   if(err < 0) {
     std::cerr << "Couldn't create a buffer object: " << std::endl;
     exit(1);
@@ -573,20 +573,20 @@ void GLWidget::init_cl() {
 
 void GLWidget::readProperties() {
 
-  struct SphereData select_data;
+  struct SphereData selectData;
   int err;
 
   if(selected_object < kNumObjects && queue != NULL) {
 
     // Read object results
-    err = clEnqueueReadBuffer(queue, sphere_memobj, CL_TRUE, selected_object * sizeof(select_data),
-        sizeof(select_data), &select_data, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue, sphere_memobj, CL_TRUE, selected_object * sizeof(selectData),
+        sizeof(selectData), &selectData, 0, NULL, NULL);
     if(err < 0) {
       std::cerr << "Couldn't read the object information" << std::endl;
       exit(1);
     }
 
-    win->property_browser->setSphereData(&select_data, &(sphere_props[selected_object]));
+    win->property_browser->setSphereData(&selectData, &(sphere_props[selected_object]));
   }
 }
 
@@ -703,7 +703,7 @@ void GLWidget::paintGL() {
         glUniform3fv(color_location, 1, &(selected_color[0]));
       else
         glUniform3fv(color_location, 1, &(sphere_props[i].color[0]));
-      glDrawElements(geom_vec[0].primitive, count[i], GL_UNSIGNED_SHORT, indices[i]);
+      glDrawElements(geomVec[0].primitive, count[i], GL_UNSIGNED_SHORT, indices[i]);
     }
 
     glBindVertexArray(0);
@@ -804,7 +804,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
 
       // Read pick_result results
       err = clEnqueueReadBuffer(queue, pick_buffer, CL_TRUE, 0,
-                                2 * num_groups * sizeof(float), pick_result, 0, NULL, NULL);
+                                2 * numGroups * sizeof(float), pick_result, 0, NULL, NULL);
       if(err < 0) {
         std::cerr << "Couldn't read the pick-selection result buffer" << std::endl;
         exit(1);
@@ -815,7 +815,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
       clEnqueueReleaseGLObjects(queue, 1, &ibo_memobj, 0, NULL, NULL);
 
       // Check for smallest output
-      for(i=0; i<2*num_groups; i+=2) {
+      for(i=0; i<2*numGroups; i+=2) {
         if(pick_result[i] < t_test) {
           t_test = pick_result[i];
          selected_object = (unsigned int)(floor((pick_result[i+1]+(i/2)*pick_local_size)/num_triangles));
@@ -846,7 +846,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
         case FIRST_CLICK:
           qDebug() << "State: NO_CLICK";
           current_state = NO_CLICK;
-          win->selection_action->setChecked(true);
+          win->selectionAction->setChecked(true);
         break;
       }
       break;

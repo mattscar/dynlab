@@ -5,7 +5,7 @@
 MainWindow::MainWindow() {
 
   // Access images used in user interface
-  image_dir = QCoreApplication::applicationDirPath() + "/images/";
+  imageDir = QCoreApplication::applicationDirPath() + "/images/";
 
   // Create actions
   createFileActions();
@@ -16,8 +16,8 @@ MainWindow::MainWindow() {
   createHelpActions();
 
   // Set central widget
-  tab_editor = new TabEditor(this);
-  setCentralWidget(tab_editor);
+  tabEditor = new TabEditor(this);
+  setCentralWidget(tabEditor);
 
   // Configure navigator
   navigatorWidget = new QDockWidget(tr("Project Navigator"), this);
@@ -28,22 +28,22 @@ MainWindow::MainWindow() {
   addDockWidget(Qt::LeftDockWidgetArea, navigatorWidget);
 
   // Configure console
-  console_widget = new QDockWidget(tr("Console"), this);
-  console = new QTextEdit(console_widget);
-  console_widget->setWidget(console);
-  console_widget->setMaximumHeight(75);
-  addDockWidget(Qt::BottomDockWidgetArea, console_widget);
+  consoleWidget = new QDockWidget(tr("Console"), this);
+  console = new QTextEdit(consoleWidget);
+  consoleWidget->setWidget(console);
+  consoleWidget->setMaximumHeight(75);
+  addDockWidget(Qt::BottomDockWidgetArea, consoleWidget);
 
   // Configure property browser
-  browser_widget = new QDockWidget(tr("Property Browser"), this);
+  browserWidget = new QDockWidget(tr("Property Browser"), this);
   property_browser = new PropertyBrowser();
-  browser_widget->setWidget(property_browser);
-  browser_widget->setMinimumWidth(300);
-  addDockWidget(Qt::RightDockWidgetArea, browser_widget);
+  browserWidget->setWidget(property_browser);
+  browserWidget->setMinimumWidth(300);
+  addDockWidget(Qt::RightDockWidgetArea, browserWidget);
   setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 
   // Connect navigator double-click event to tab editor
-  connect(navigator, SIGNAL(doubleClicked(const QModelIndex &)), tab_editor, SLOT(createTab(const QModelIndex &)));
+  connect(navigator, SIGNAL(doubleClicked(const QModelIndex &)), tabEditor, SLOT(createTab(const QModelIndex &)));
   // connect(tabEditor->tabBar(), SIGNAL(doubleClicked(const QModelIndex &)), tabEditor, SLOT(createTab(const QModelIndex &)));
 
   editorMaximized = false;
@@ -53,7 +53,7 @@ MainWindow::MainWindow() {
   createStatusBar();
 
   setWindowTitle(tr("DynLab"));
-  setWindowIcon(QIcon(image_dir + "logo.png"));
+  setWindowIcon(QIcon(imageDir + "logo.png"));
 }
 
 // Check whether document needs to be saved
@@ -65,88 +65,88 @@ static bool maybeSave() {
 void MainWindow::createFileActions() {
 
   // Create new file
-  new_file_action = new QAction(QIcon(image_dir + "new.png"), tr("&New"), this);
-  new_file_action->setShortcuts(QKeySequence::New);
-  new_file_action->setStatusTip(tr("Create a new project"));
-  connect(new_file_action, SIGNAL(triggered()), this, SLOT(newFile()));
+  newFileAction = new QAction(QIcon(imageDir + "new.png"), tr("&New"), this);
+  newFileAction->setShortcuts(QKeySequence::New);
+  newFileAction->setStatusTip(tr("Create a new project"));
+  connect(newFileAction, SIGNAL(triggered()), this, SLOT(newFile()));
 
   // Open file
-  open_file_action = new QAction(QIcon(image_dir + "open.png"), tr("&Open..."), this);
-  open_file_action->setShortcuts(QKeySequence::Open);
-  open_file_action->setStatusTip(tr("Open an existing project"));
-  connect(open_file_action, SIGNAL(triggered()), this, SLOT(open()));
+  openFileAction = new QAction(QIcon(imageDir + "open.png"), tr("&Open..."), this);
+  openFileAction->setShortcuts(QKeySequence::Open);
+  openFileAction->setStatusTip(tr("Open an existing project"));
+  connect(openFileAction, SIGNAL(triggered()), this, SLOT(open()));
 
   // Save File
-  save_file_action = new QAction(QIcon(image_dir + "save.png"), tr("&Save"), this);
-  save_file_action->setShortcuts(QKeySequence::Save);
-  save_file_action->setStatusTip(tr("Save the project"));
-  connect(save_file_action, SIGNAL(triggered()), this, SLOT(save()));
+  saveFileAction = new QAction(QIcon(imageDir + "save.png"), tr("&Save"), this);
+  saveFileAction->setShortcuts(QKeySequence::Save);
+  saveFileAction->setStatusTip(tr("Save the project"));
+  connect(saveFileAction, SIGNAL(triggered()), this, SLOT(save()));
 
   // Save as
-  save_as_action = new QAction(tr("Save &As..."), this);
-  save_as_action->setShortcuts(QKeySequence::SaveAs);
-  save_as_action->setStatusTip(tr("Save the document under a new name"));
-  connect(save_as_action, SIGNAL(triggered()), this, SLOT(saveAs()));
+  saveAsAction = new QAction(tr("Save &As..."), this);
+  saveAsAction->setShortcuts(QKeySequence::SaveAs);
+  saveAsAction->setStatusTip(tr("Save the document under a new name"));
+  connect(saveAsAction, SIGNAL(triggered()), this, SLOT(saveAs()));
 
   // Print
-  print_action = new QAction(QIcon(image_dir + "print.png"), tr("&Print"), this);
-  print_action->setShortcuts(QKeySequence::Print);
-  print_action->setStatusTip(tr("Send the document to a printer"));
-  connect(print_action, SIGNAL(triggered()), this, SLOT(print()));
+  printAction = new QAction(QIcon(imageDir + "print.png"), tr("&Print"), this);
+  printAction->setShortcuts(QKeySequence::Print);
+  printAction->setStatusTip(tr("Send the document to a printer"));
+  connect(printAction, SIGNAL(triggered()), this, SLOT(print()));
 
   // Exit
-  exit_action = new QAction(tr("E&xit"), this);
-  exit_action->setShortcuts(QKeySequence::Quit);
-  exit_action->setStatusTip(tr("Exit the application"));
-  connect(exit_action, SIGNAL(triggered()), this, SLOT(close()));
+  exitAction = new QAction(tr("E&xit"), this);
+  exitAction->setShortcuts(QKeySequence::Quit);
+  exitAction->setStatusTip(tr("Exit the application"));
+  connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 }
 
 // Create QActions for edit operations
 void MainWindow::createEditActions() {
 
   // Cut
-  cut_action = new QAction(QIcon(image_dir + "cut.png"), tr("Cut"), this);
-  cut_action->setShortcuts(QKeySequence::Cut);
-  cut_action->setStatusTip(tr("Cut"));
-  //connect(cut_action, SIGNAL(triggered()), this, SLOT(cut()));
+  cutAction = new QAction(QIcon(imageDir + "cut.png"), tr("Cut"), this);
+  cutAction->setShortcuts(QKeySequence::Cut);
+  cutAction->setStatusTip(tr("Cut"));
+  //connect(cutAction, SIGNAL(triggered()), this, SLOT(cut()));
 
   // Copy
-  copy_action = new QAction(QIcon(image_dir + "copy.png"), tr("Copy"), this);
-  copy_action->setShortcuts(QKeySequence::Copy);
-  copy_action->setStatusTip(tr("Copy"));
-  //connect(copy_action, SIGNAL(triggered()), this, SLOT(copy()));
+  copyAction = new QAction(QIcon(imageDir + "copy.png"), tr("Copy"), this);
+  copyAction->setShortcuts(QKeySequence::Copy);
+  copyAction->setStatusTip(tr("Copy"));
+  //connect(copyAction, SIGNAL(triggered()), this, SLOT(copy()));
 
   // Paste
-  paste_action = new QAction(QIcon(image_dir + "paste.png"), tr("Paste"), this);
-  paste_action->setShortcuts(QKeySequence::Paste);
-  paste_action->setStatusTip(tr("Paste"));
-  //connect(paste_action, SIGNAL(triggered()), this, SLOT(paste()));
+  pasteAction = new QAction(QIcon(imageDir + "paste.png"), tr("Paste"), this);
+  pasteAction->setShortcuts(QKeySequence::Paste);
+  pasteAction->setStatusTip(tr("Paste"));
+  //connect(pasteAction, SIGNAL(triggered()), this, SLOT(paste()));
 }
 
 // Create QActions for drawing faces
 void MainWindow::createDrawActions() {
 
   // Create selection action
-  selection_action = new QAction(QIcon(image_dir + "arrow.png"), tr("&Select..."), this);
-  selection_action->setStatusTip(tr("Select one or more objects"));
-  selection_action->setCheckable(true);
+  selectionAction = new QAction(QIcon(imageDir + "arrow.png"), tr("&Select..."), this);
+  selectionAction->setStatusTip(tr("Select one or more objects"));
+  selectionAction->setCheckable(true);
 
   // Create circle action
-  circle_action = new QAction(QIcon(image_dir + "circle.png"), tr("&Circle..."), this);
-  circle_action->setStatusTip(tr("Draw a circle"));
-  circle_action->setCheckable(true);
+  circleAction = new QAction(QIcon(imageDir + "circle.png"), tr("&Circle..."), this);
+  circleAction->setStatusTip(tr("Draw a circle"));
+  circleAction->setCheckable(true);
 
   // Create rect action
-  rect_action = new QAction(QIcon(image_dir + "rect.png"), tr("&Rectangle..."), this);
-  rect_action->setStatusTip(tr("Draw a rectangle"));
-  rect_action->setCheckable(true);
+  rectAction = new QAction(QIcon(imageDir + "rect.png"), tr("&Rectangle..."), this);
+  rectAction->setStatusTip(tr("Draw a rectangle"));
+  rectAction->setCheckable(true);
 
   // Create action group
-  draw_group = new QActionGroup(this);
-  draw_group->addAction(selection_action);
-  draw_group->addAction(circle_action);
-  draw_group->addAction(rect_action);
-  draw_group->setEnabled(false);
+  drawGroup = new QActionGroup(this);
+  drawGroup->addAction(selectionAction);
+  drawGroup->addAction(circleAction);
+  drawGroup->addAction(rectAction);
+  drawGroup->setEnabled(false);
 }
 
 
@@ -154,125 +154,125 @@ void MainWindow::createDrawActions() {
 void MainWindow::createViewActions() {
 
   // Create zoom in action
-  zoom_in_action = new QAction(QIcon(image_dir + "zoom_in.png"), tr("Zoom in"), this);
-  zoom_in_action->setShortcuts(QKeySequence::ZoomIn);
-  zoom_in_action->setStatusTip(tr("Zoom in"));
+  zoomInAction = new QAction(QIcon(imageDir + "zoomIn.png"), tr("Zoom in"), this);
+  zoomInAction->setShortcuts(QKeySequence::ZoomIn);
+  zoomInAction->setStatusTip(tr("Zoom in"));
 
   // Create zoom out action
-  zoom_out_action = new QAction(QIcon(image_dir + "zoom_out.png"), tr("Zoom out"), this);
-  zoom_out_action->setShortcuts(QKeySequence::ZoomOut);
-  zoom_out_action->setStatusTip(tr("Zoom out"));
+  zoomOutAction = new QAction(QIcon(imageDir + "zoomOut.png"), tr("Zoom out"), this);
+  zoomOutAction->setShortcuts(QKeySequence::ZoomOut);
+  zoomOutAction->setStatusTip(tr("Zoom out"));
 }
 
 // Create actions related to timing and simulation
 void MainWindow::createSimActions() {
 
   // Create time action
-  time_action = new QAction(QIcon(image_dir + "time.png"), tr("Time"), this);
-  time_action->setStatusTip(tr("Configure timing"));
+  timeAction = new QAction(QIcon(imageDir + "time.png"), tr("Time"), this);
+  timeAction->setStatusTip(tr("Configure timing"));
 
   // Create play action
-  play_action = new QAction(QIcon(image_dir + "play.png"), tr("Play"), this);
-  play_action->setStatusTip(tr("Continue simulation"));
+  playAction = new QAction(QIcon(imageDir + "play.png"), tr("Play"), this);
+  playAction->setStatusTip(tr("Continue simulation"));
 
   // Create pause action
-  pause_action = new QAction(QIcon(image_dir + "pause.png"), tr("Pause"), this);
-  pause_action->setStatusTip(tr("Pause simulation"));
+  pauseAction = new QAction(QIcon(imageDir + "pause.png"), tr("Pause"), this);
+  pauseAction->setStatusTip(tr("Pause simulation"));
 
   // Create stop action
-  stop_action = new QAction(QIcon(image_dir + "stop.png"), tr("Stop"), this);
-  stop_action->setStatusTip(tr("Stop simulation"));
+  stopAction = new QAction(QIcon(imageDir + "stop.png"), tr("Stop"), this);
+  stopAction->setStatusTip(tr("Stop simulation"));
 }
 
 // Create QActions for help operations
 void MainWindow::createHelpActions() {
 
   // Configure the About action in the help menu
-  about_action = new QAction(QIcon(image_dir + "help.png"), tr("Help"), this);
-  about_action->setStatusTip(tr("Provide assistance"));
-  connect(about_action, SIGNAL(triggered()), this, SLOT(about()));
+  aboutAction = new QAction(QIcon(imageDir + "help.png"), tr("Help"), this);
+  aboutAction->setStatusTip(tr("Provide assistance"));
+  connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
 }
 
 // Assemble actions within main menu
 void MainWindow::createMenus() {
 
   // Create file menu
-  file_menu = menuBar()->addMenu(tr("&File"));
-  file_menu->addAction(new_file_action);
-  file_menu->addAction(open_file_action);
-  file_menu->addAction(save_file_action);
-  file_menu->addAction(save_as_action);
-  file_menu->addSeparator();
-  file_menu->addAction(print_action);
-  file_menu->addSeparator();
-  file_menu->addAction(exit_action);
+  fileMenu = menuBar()->addMenu(tr("&File"));
+  fileMenu->addAction(newFileAction);
+  fileMenu->addAction(openFileAction);
+  fileMenu->addAction(saveFileAction);
+  fileMenu->addAction(saveAsAction);
+  fileMenu->addSeparator();
+  fileMenu->addAction(printAction);
+  fileMenu->addSeparator();
+  fileMenu->addAction(exitAction);
   menuBar()->addSeparator();
 
   // Create edit menu
-  edit_menu = menuBar()->addMenu(tr("&Edit"));
-  edit_menu->addAction(cut_action);
-  edit_menu->addAction(copy_action);
-  edit_menu->addAction(paste_action);
+  editMenu = menuBar()->addMenu(tr("&Edit"));
+  editMenu->addAction(cutAction);
+  editMenu->addAction(copyAction);
+  editMenu->addAction(pasteAction);
   menuBar()->addSeparator();
 
   // Create view menu
-  view_menu = menuBar()->addMenu(tr("&View"));
-  view_menu->addAction(zoom_in_action);
-  view_menu->addAction(zoom_out_action);
+  viewMenu = menuBar()->addMenu(tr("&View"));
+  viewMenu->addAction(zoomInAction);
+  viewMenu->addAction(zoomOutAction);
   menuBar()->addSeparator();
 
   // Create draw menu
-  draw_menu = menuBar()->addMenu(tr("&Draw"));
-  draw_menu->addAction(selection_action);
-  draw_menu->addAction(circle_action);
-  draw_menu->addAction(rect_action);
+  drawMenu = menuBar()->addMenu(tr("&Draw"));
+  drawMenu->addAction(selectionAction);
+  drawMenu->addAction(circleAction);
+  drawMenu->addAction(rectAction);
   menuBar()->addSeparator();
 
   // Create simulation menu
-  sim_menu = menuBar()->addMenu(tr("&Simulation"));
-  sim_menu->addAction(time_action);
-  sim_menu->addAction(play_action);
-  sim_menu->addAction(pause_action);
-  sim_menu->addAction(stop_action);
+  simMenu = menuBar()->addMenu(tr("&Simulation"));
+  simMenu->addAction(timeAction);
+  simMenu->addAction(playAction);
+  simMenu->addAction(pauseAction);
+  simMenu->addAction(stopAction);
   menuBar()->addSeparator();
 
   // Create help menu
-  help_menu = menuBar()->addMenu(tr("&Help"));
-  help_menu->addAction(about_action);
+  helpMenu = menuBar()->addMenu(tr("&Help"));
+  helpMenu->addAction(aboutAction);
 }
 
 // Add entries to toolbars
 void MainWindow::createToolBars() {
 
   // Create tool bar with file actions
-  file_bar = addToolBar(tr("File"));
-  file_bar->addAction(new_file_action);
-  file_bar->addAction(open_file_action);
-  file_bar->addAction(save_file_action);
-  file_bar->addAction(print_action);
+  fileBar = addToolBar(tr("File"));
+  fileBar->addAction(newFileAction);
+  fileBar->addAction(openFileAction);
+  fileBar->addAction(saveFileAction);
+  fileBar->addAction(printAction);
 
   // Create tool bar with view actions
-  view_bar = addToolBar(tr("View"));
-  view_bar->addAction(zoom_in_action);
-  view_bar->addAction(zoom_out_action);
+  viewBar = addToolBar(tr("View"));
+  viewBar->addAction(zoomInAction);
+  viewBar->addAction(zoomOutAction);
 
   // Create tool bar with draw actions
-  draw_bar = addToolBar(tr("Draw"));
-  draw_bar->addAction(selection_action);
-  draw_bar->addAction(circle_action);
-  draw_bar->addAction(rect_action);
+  drawBar = addToolBar(tr("Draw"));
+  drawBar->addAction(selectionAction);
+  drawBar->addAction(circleAction);
+  drawBar->addAction(rectAction);
 
   // Create simulation tool bar
-  sim_bar = addToolBar(tr("Simulate"));
-  sim_bar->addAction(time_action);
-  sim_bar->addAction(play_action);
-  sim_bar->addAction(pause_action);
-  //sim_bar->addAction(stop_action);
+  simBar = addToolBar(tr("Simulate"));
+  simBar->addAction(timeAction);
+  simBar->addAction(playAction);
+  simBar->addAction(pauseAction);
+  //simBar->addAction(stopAction);
   menuBar()->addSeparator();
 
   // Create help tool bar
-  help_bar = addToolBar(tr("Help"));
-  help_bar->addAction(about_action);
+  helpBar = addToolBar(tr("Help"));
+  helpBar->addAction(aboutAction);
 }
 
 void MainWindow::createStatusBar() {
@@ -352,13 +352,13 @@ void MainWindow::about() {
 // Maximize editor
 void MainWindow::maximizeEditor() {
   if(!editorMaximized) {
-    console_widget->setVisible(false);
-    browser_widget->setVisible(false);
+    consoleWidget->setVisible(false);
+    browserWidget->setVisible(false);
     navigatorWidget->setVisible(false);
     editorMaximized = true;
   } else {
-    console_widget->setVisible(true);
-    browser_widget->setVisible(true);
+    consoleWidget->setVisible(true);
+    browserWidget->setVisible(true);
     navigatorWidget->setVisible(true);
     editorMaximized = false;
   }

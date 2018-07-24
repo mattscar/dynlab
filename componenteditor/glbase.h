@@ -1,6 +1,8 @@
 #ifndef GLBASE_H
 #define GLBASE_H
 
+// Declares the base of the graphical widget
+
 #include "glwidget.h"
 
 #include <QScrollArea>
